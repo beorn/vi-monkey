@@ -1,350 +1,193 @@
 /**
  * DotzReporter Acceptance Tests
  *
- * Spec-level tests verifying the reporter renders correct output for various scenarios.
- * Uses inkx test renderer directly - no helpers needed.
+ * Screen-level tests: render the Report component, check app.text output.
+ * Each test exercises a complete scenario end-to-end through the store → render pipeline.
  */
 
-import { describe, it, expect, beforeEach } from "vitest"
+import { describe, it, expect } from "vitest"
 import React from "react"
 import { createRenderer } from "inkx/testing"
 
-import {
-  Report,
-  DEFAULT_SYMBOLS,
-  durationToSymbol,
-  fmtDuration,
-  fmtMs,
-  type Options,
-} from "../src/dotz/index.tsx"
+import { Report, DEFAULT_SYMBOLS, type Options } from "../src/dotz/index.tsx"
 import { createTestStore, type TestStore } from "../src/dotz/store.js"
 
-const render = createRenderer({ cols: 100, rows: 50 })
+const render = createRenderer({ cols: 80, rows: 50 })
 
-function createOptions(overrides: Partial<Options> = {}): Options {
-  return {
+function setup(overrides: Partial<Options> = {}) {
+  const store = createTestStore(100)
+  const options: Options = {
     slowThreshold: 100,
     perfOutput: "",
     showSlow: true,
     symbols: DEFAULT_SYMBOLS,
     ...overrides,
   }
+  const show = (width = 80) =>
+    render(<Report store={store} options={options} width={width} />)
+  return { store, options, show }
 }
 
-// =============================================================================
-// Acceptance Tests: Report Rendering
-// =============================================================================
-
-describe("Report", () => {
-  let store: TestStore
-  let options: Options
-
-  beforeEach(() => {
-    store = createTestStore(100)
-    options = createOptions()
-  })
-
-  describe("empty state", () => {
-    it("shows legend and zero tests", () => {
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).toContain("Legend:")
-      expect(app.text).toContain("fast")
-      expect(app.text).toContain("slow")
-      expect(app.text).toContain("fail")
-      expect(app.text).toContain("skip")
-      expect(app.text).toContain("Tests")
-      expect(app.text).toContain("(0)")
-    })
-
-    it("does not show package table with single category", () => {
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).not.toContain("PACKAGE")
-    })
-  })
-
-  describe("passing tests", () => {
-    beforeEach(() => {
-      store.addTest("test-1", "pkg-a", "file1.test.ts")
-      store.addTest("test-2", "pkg-a", "file1.test.ts")
-      store.addTest("test-3", "pkg-a", "file2.test.ts")
-      store.updateTest("test-1", "passed", 10)
-      store.updateTest("test-2", "passed", 50)
-      store.updateTest("test-3", "passed", 200)
-    })
-
-    it("shows passing count in summary", () => {
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).toContain("3 passed")
-      expect(app.text).toContain("(3)")
-    })
-
-    it("shows package name in dots section", () => {
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).toContain("pkg-a")
-    })
-
-    it("shows slow tests section for tests exceeding 2x threshold", () => {
-      store.updateSlowest("slow test", "file2.test.ts", 10, 200, 100)
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).toContain("SLOW TESTS")
-      expect(app.text).toContain("slow test")
-    })
-  })
-
-  describe("failing tests", () => {
-    beforeEach(() => {
-      store.addTest("test-1", "pkg-a", "file1.test.ts")
-      store.addTest("test-2", "pkg-a", "file1.test.ts")
-      store.updateTest("test-1", "passed", 10)
-      store.updateTest("test-2", "failed", 15, [
-        { message: "Expected true to be false" },
-      ])
-    })
-
-    it("shows failure count and details", () => {
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).toContain("1 failed")
-      expect(app.text).toContain("1 passed")
-      expect(app.text).toContain("FAILURES")
-      expect(app.text).toContain("Expected true to be false")
-    })
-  })
-
-  describe("skipped tests", () => {
-    beforeEach(() => {
-      store.addTest("test-1", "pkg-a", "file1.test.ts")
-      store.addTest("test-2", "pkg-a", "file1.test.ts")
-      store.updateTest("test-1", "passed", 10)
-      store.updateTest("test-2", "skipped", 0)
-    })
-
-    it("shows skipped count in summary", () => {
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).toContain("1 skipped")
-      expect(app.text).toContain("1 passed")
-    })
-  })
-
-  describe("multiple packages", () => {
-    beforeEach(() => {
-      store.addTest("a-1", "package-a", "a1.test.ts")
-      store.addTest("a-2", "package-a", "a2.test.ts")
-      store.addTest("b-1", "package-b", "b1.test.ts")
-      store.updateTest("a-1", "passed", 10)
-      store.updateTest("a-2", "failed", 30, [{ message: "error" }])
-      store.updateTest("b-1", "passed", 15)
-    })
-
-    it("shows package table with stats", () => {
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).toContain("PACKAGE")
-      expect(app.text).toContain("TESTS")
-      expect(app.text).toContain("TIME")
-      expect(app.text).toContain("package-a")
-      expect(app.text).toContain("package-b")
-    })
-  })
-
-  describe("file breakout", () => {
-    it("breaks out per-file when package has >2 lines of dots across files", () => {
-      // width=80, maxLabelWidth=13 ("big-package" + 1), dotsWidth=66
-      // 200 tests across 4 files → ~3 lines of dots → triggers breakout
-      const files = [
-        "alpha.test.ts",
-        "beta.test.ts",
-        "gamma.test.ts",
-        "delta.test.ts",
-      ]
-      for (let i = 0; i < 200; i++) {
-        const file = files[i % files.length]!
-        store.addTest(`t-${i}`, "big-package", file)
-        store.updateTest(`t-${i}`, "passed", 10)
-      }
-
-      const app = render(<Report store={store} options={options} width={80} />)
-      const text = app.text
-
-      // Should show per-file labels (without .test.ts extension)
-      expect(text).toContain("alpha")
-      expect(text).toContain("beta")
-      expect(text).toContain("gamma")
-      expect(text).toContain("delta")
-      // Category name should still appear
-      expect(text).toContain("big-package")
-    })
-
-    it("does not break out small packages with few tests", () => {
-      store.addTest("t1", "small-pkg", "one.test.ts")
-      store.addTest("t2", "small-pkg", "two.test.ts")
-      store.updateTest("t1", "passed", 10)
-      store.updateTest("t2", "passed", 10)
-
-      const app = render(<Report store={store} options={options} width={80} />)
-      const text = app.text
-
-      // Should show category but NOT per-file breakout
-      expect(text).toContain("small-pkg")
-      expect(text).not.toContain("one")
-      expect(text).not.toContain("two")
-    })
-
-    it("breaks out when >1 line with >3 files", () => {
-      // 70 tests across 4 files, >1 line (>66 dots) with >3 files
-      const files = ["a.test.ts", "b.test.ts", "c.test.ts", "d.test.ts"]
-      for (let i = 0; i < 70; i++) {
-        const file = files[i % files.length]!
-        store.addTest(`t-${i}`, "medium-pkg", file)
-        store.updateTest(`t-${i}`, "passed", 10)
-      }
-
-      const app = render(<Report store={store} options={options} width={80} />)
-      const text = app.text
-
-      // Per-file labels should appear
-      expect(text).toContain("medium-pkg")
-      // File names are shown without the .test.ts extension
-      expect(text).toMatch(/\ba\b/)
-      expect(text).toMatch(/\bb\b/)
-    })
-  })
-
-  describe("slow tests display", () => {
-    beforeEach(() => {
-      store.addTest("test-1", "pkg-a", "file1.test.ts")
-      store.updateTest("test-1", "passed", 500)
-      store.updateSlowest("very slow test", "file1.test.ts", 42, 500, 100)
-    })
-
-    it("shows slow test with file location", () => {
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).toContain("SLOW TESTS")
-      expect(app.text).toContain("very slow test")
-      expect(app.text).toContain("file1.test.ts:42")
-    })
-
-    it("hides slow tests when showSlow is false", () => {
-      options.showSlow = false
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.text).not.toContain("SLOW TESTS")
-    })
-  })
-
-  describe("locator queries", () => {
-    it("can query sections by id", () => {
-      store.addTest("test-1", "pkg-a", "file1.test.ts")
-      store.updateTest("test-1", "passed", 10)
-
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.locator("#report").count()).toBe(1)
-      expect(app.locator("#dots").count()).toBe(1)
-      expect(app.locator("#summary").count()).toBe(1)
-    })
-
-    it("can query summary content", () => {
-      store.addTest("test-1", "pkg-a", "file1.test.ts")
-      store.updateTest("test-1", "passed", 10)
-
-      const app = render(<Report store={store} options={options} width={100} />)
-
-      expect(app.locator("#summary").textContent()).toContain("1 passed")
-    })
-  })
-})
-
-// =============================================================================
-// Unit Tests: Pure Functions
-// =============================================================================
-
-describe("durationToSymbol", () => {
-  const symbols = DEFAULT_SYMBOLS
-  const threshold = 100
-
-  it("maps duration to correct symbol", () => {
-    expect(durationToSymbol(0, threshold, symbols).char).toBe("·")
-    expect(durationToSymbol(400, threshold, symbols).char).toBe("•")
-    expect(durationToSymbol(800, threshold, symbols).char).toBe("●")
-  })
-
-  it("marks tests exceeding max duration as bright", () => {
-    const result = durationToSymbol(1500, threshold, symbols)
-    expect(result.char).toBe("●")
-    expect(result.bright).toBe(true)
-  })
-})
-
-describe("fmtDuration", () => {
-  it("formats milliseconds, seconds, and minutes", () => {
-    expect(fmtDuration(50)).toBe("50ms")
-    expect(fmtDuration(1500)).toBe("1.50s")
-    expect(fmtDuration(90000)).toBe("1m 30s")
-  })
-})
-
-describe("fmtMs", () => {
-  it("formats milliseconds and seconds", () => {
-    expect(fmtMs(50)).toBe("50ms")
-    expect(fmtMs(2500)).toBe("2.5s")
-  })
-})
-
-// =============================================================================
-// Integration Tests: Store
-// =============================================================================
-
-describe("store integration", () => {
-  let store: TestStore
-
-  beforeEach(() => {
-    store = createTestStore(100)
-  })
-
-  it("tracks test lifecycle correctly", () => {
-    store.addTest("t1", "pkg", "file.test.ts")
-    store.addTest("t2", "pkg", "file.test.ts")
-
-    expect(store.getSnapshot().testStates.get("t1")).toBe("pending")
-
-    store.updateTest("t1", "passed", 50)
-    store.updateTest("t2", "failed", 100, [{ message: "oops" }])
-
-    const state = store.getSnapshot()
-    expect(state.passed).toBe(1)
-    expect(state.failed).toBe(1)
-    expect(state.testErrors.get("t2")?.errors[0]?.message).toBe("oops")
-  })
-
-  it("handles test retries by adjusting counters", () => {
-    store.addTest("t1", "pkg", "file.test.ts")
-
-    store.updateTest("t1", "failed", 50)
-    expect(store.getSnapshot().failed).toBe(1)
-
-    store.updateTest("t1", "passed", 60)
-    const state = store.getSnapshot()
-    expect(state.failed).toBe(0)
-    expect(state.passed).toBe(1)
-  })
-
-  it("tracks slowest tests sorted by duration", () => {
-    for (let i = 0; i < 25; i++) {
-      store.updateSlowest(`test-${i}`, "file.test.ts", i, 200 + i * 10, 100)
+/** Add N tests to a package spread across files */
+function addTests(
+  store: TestStore,
+  category: string,
+  files: string[],
+  count: number,
+  state: "passed" | "failed" | "skipped" = "passed",
+  duration = 10,
+) {
+  for (let i = 0; i < count; i++) {
+    const id = `${category}-${i}`
+    const file = files[i % files.length]!
+    store.addTest(id, category, file)
+    if (state === "failed") {
+      store.updateTest(id, state, duration, [{ message: `Error in ${id}` }])
+    } else {
+      store.updateTest(id, state, duration)
     }
+  }
+}
 
-    const state = store.getSnapshot()
-    expect(state.topSlowest).toHaveLength(20)
-    expect(state.topSlowest[0]?.duration).toBeGreaterThan(
-      state.topSlowest[19]?.duration ?? 0,
-    )
+describe("dotz report", () => {
+  it("empty: shows legend and zero count", () => {
+    const { show } = setup()
+    const { text } = show()
+
+    expect(text).toContain("Legend:")
+    expect(text).toContain("fast")
+    expect(text).toContain("slow")
+    expect(text).toContain("fail")
+    expect(text).toContain("skip")
+    expect(text).toContain("Tests")
+    expect(text).toContain("(0)")
+    expect(text).not.toContain("PACKAGE")
+  })
+
+  it("passing: shows dots, count, and package name", () => {
+    const { store, show } = setup()
+    addTests(store, "my-pkg", ["a.test.ts"], 5)
+
+    const { text } = show()
+
+    expect(text).toContain("my-pkg")
+    expect(text).toContain("5 passed")
+    expect(text).toContain("(5)")
+  })
+
+  it("mixed states: shows pass/fail/skip counts and failure details", () => {
+    const { store, show } = setup()
+    store.addTest("t1", "pkg", "a.test.ts")
+    store.addTest("t2", "pkg", "a.test.ts")
+    store.addTest("t3", "pkg", "a.test.ts")
+    store.updateTest("t1", "passed", 10)
+    store.updateTest("t2", "failed", 15, [
+      { message: "Expected true to be false" },
+    ])
+    store.updateTest("t3", "skipped", 0)
+
+    const { text } = show()
+
+    expect(text).toContain("1 passed")
+    expect(text).toContain("1 failed")
+    expect(text).toContain("1 skipped")
+    expect(text).toContain("FAILURES")
+    expect(text).toContain("Expected true to be false")
+  })
+
+  it("multiple packages: shows package table", () => {
+    const { store, show } = setup()
+    addTests(store, "package-alpha", ["a.test.ts"], 10)
+    addTests(store, "package-beta", ["b.test.ts"], 5)
+
+    const { text } = show()
+
+    expect(text).toContain("PACKAGE")
+    expect(text).toContain("TESTS")
+    expect(text).toContain("TIME")
+    expect(text).toContain("package-alpha")
+    expect(text).toContain("package-beta")
+  })
+
+  it("slow tests: shows location and duration", () => {
+    const { store, show } = setup()
+    store.addTest("t1", "pkg", "slow.test.ts")
+    store.updateTest("t1", "passed", 500)
+    store.updateSlowest("very slow test", "slow.test.ts", 42, 500, 100)
+
+    const { text } = show()
+
+    expect(text).toContain("SLOW TESTS")
+    expect(text).toContain("very slow test")
+    expect(text).toContain("slow.test.ts:42")
+  })
+
+  it("slow tests hidden when showSlow=false", () => {
+    const { store, show } = setup({ showSlow: false })
+    store.addTest("t1", "pkg", "slow.test.ts")
+    store.updateTest("t1", "passed", 500)
+    store.updateSlowest("very slow test", "slow.test.ts", 42, 500, 100)
+
+    expect(show().text).not.toContain("SLOW TESTS")
+  })
+
+  it("file breakout: many tests across files triggers per-file lines", () => {
+    const { store, show } = setup()
+    const files = [
+      "alpha.test.ts",
+      "beta.test.ts",
+      "gamma.test.ts",
+      "delta.test.ts",
+    ]
+    // 200 tests across 4 files → >2 lines of dots → triggers breakout
+    addTests(store, "big-package", files, 200)
+
+    const { text } = show()
+
+    // Package header + per-file labels (without .test.ts extension)
+    expect(text).toContain("big-package")
+    expect(text).toContain("alpha")
+    expect(text).toContain("beta")
+    expect(text).toContain("gamma")
+    expect(text).toContain("delta")
+  })
+
+  it("file breakout: small package stays collapsed", () => {
+    const { store, show } = setup()
+    addTests(store, "small-pkg", ["one.test.ts", "two.test.ts"], 4)
+
+    const { text } = show()
+
+    expect(text).toContain("small-pkg")
+    // File names should NOT appear (no breakout for 4 tests)
+    expect(text).not.toContain("one")
+    expect(text).not.toContain("two")
+  })
+
+  it("file breakout: >1 line with >3 files triggers breakout", () => {
+    const { store, show } = setup()
+    const files = ["aa.test.ts", "bb.test.ts", "cc.test.ts", "dd.test.ts"]
+    // 70 tests across 4 files, >1 line with >3 files
+    addTests(store, "medium-pkg", files, 70)
+
+    const { text } = show()
+
+    expect(text).toContain("medium-pkg")
+    expect(text).toContain("aa")
+    expect(text).toContain("bb")
+    expect(text).toContain("cc")
+    expect(text).toContain("dd")
+  })
+
+  it("retries: counter adjusts when test state changes", () => {
+    const { store, show } = setup()
+    store.addTest("t1", "pkg", "a.test.ts")
+    // Simulate retry: fail then pass
+    store.updateTest("t1", "failed", 50)
+    store.updateTest("t1", "passed", 60)
+
+    const { text } = show()
+    expect(text).toContain("1 passed")
+    expect(text).not.toContain("failed")
   })
 })

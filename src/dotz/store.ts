@@ -64,6 +64,8 @@ export interface TestStoreState {
 export interface TestStore {
   getSnapshot: () => TestStoreState
   subscribe: (listener: () => void) => () => void
+  /** Flush any pending throttled notification immediately */
+  flushNotify: () => void
   reset: () => void
   addTest: (id: string, category: string, file: string) => void
   updateTest: (
@@ -146,11 +148,35 @@ function createInitialState(): TestStoreState {
 export function createTestStore(slowThreshold = 100): TestStore {
   let state = createInitialState()
   const listeners = new Set<() => void>()
-  const notify = () => {
+  let dirty = false
+  let notifyTimer: ReturnType<typeof setTimeout> | null = null
+  let lastNotifyTime = 0
+
+  /** Flush pending notification immediately */
+  const flushNotify = () => {
+    if (notifyTimer) {
+      clearTimeout(notifyTimer)
+      notifyTimer = null
+    }
+    if (!dirty) return
+    dirty = false
+    lastNotifyTime = Date.now()
     // Create a new state reference so useSyncExternalStore detects the change
     // (it compares snapshots with Object.is). Inner Maps/Sets are shared.
     state = { ...state }
     listeners.forEach((l) => l())
+  }
+
+  /** Schedule a throttled notification (max once per 500ms) */
+  const notify = () => {
+    dirty = true
+    if (notifyTimer) return // already scheduled
+    const elapsed = Date.now() - lastNotifyTime
+    if (elapsed >= 500) {
+      flushNotify()
+    } else {
+      notifyTimer = setTimeout(flushNotify, 500 - elapsed)
+    }
   }
 
   return {
@@ -159,6 +185,8 @@ export function createTestStore(slowThreshold = 100): TestStore {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
+    /** Flush any pending throttled notification immediately */
+    flushNotify,
 
     reset: () => {
       state = createInitialState()

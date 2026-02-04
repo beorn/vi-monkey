@@ -452,8 +452,8 @@ function DotsSectionInner({
                 )
                 return (
                   <Box key={file} flexDirection="row">
-                    <Box marginLeft={2}>
-                      <Text dim>{name.padEnd(maxLabelWidth - 2)}</Text>
+                    <Box width={maxLabelWidth}>
+                      <Text dim>{"  "}{name}</Text>
                     </Box>
                     <Box flexDirection="row" flexWrap="wrap" width={dotsWidth}>
                       <DotStrip
@@ -705,10 +705,9 @@ class DotzReporter implements Reporter {
   private app: Instance | null = null
   private term: Term | null = null
   private patchedConsole: PatchedConsole | null = null
+  private disposables: DisposableStack | null = null
   private isTTY = process.stdout.isTTY === true
   private prevActEnv: boolean | undefined
-  private lastFlushTime = 0
-  private flushScheduled = false
 
   constructor(opts: ReporterOptions = {}) {
     this.options = {
@@ -740,19 +739,23 @@ class DotzReporter implements Reporter {
     g.IS_REACT_ACT_ENVIRONMENT = false
 
     const { render, createTerm } = await import("inkx")
-    this.term = createTerm()
-    this.patchedConsole = patchConsole(console)
-    this.app = await render(
-      <Report
-        store={this.store}
-        options={this.options}
-        console={this.patchedConsole}
-      />,
-      this.term,
-      {
-        // mode: "inline",
-        // alternateScreen: false,
-      },
+    const stack = new DisposableStack()
+    this.disposables = stack
+    this.term = stack.use(createTerm())
+    this.patchedConsole = stack.use(patchConsole(console))
+    this.app = stack.use(
+      await render(
+        <Report
+          store={this.store}
+          options={this.options}
+          console={this.patchedConsole}
+        />,
+        this.term,
+        {
+          // mode: "inline",
+          // alternateScreen: false,
+        },
+      ),
     )
   }
 
@@ -814,25 +817,6 @@ class DotzReporter implements Reporter {
       duration,
       this.options.slowThreshold,
     )
-    this.scheduleFlush()
-  }
-
-  /** Flush rendering at most once per second for streaming output */
-  private scheduleFlush() {
-    if (!this.app || this.flushScheduled) return
-    const now = Date.now()
-    const elapsed = now - this.lastFlushTime
-    if (elapsed >= 1000) {
-      this.lastFlushTime = now
-      this.app.flush()
-    } else {
-      this.flushScheduled = true
-      setTimeout(() => {
-        this.flushScheduled = false
-        this.lastFlushTime = Date.now()
-        this.app?.flush()
-      }, 1000 - elapsed)
-    }
   }
 
   onTestModuleEnd(_: TestModule) {}
@@ -859,20 +843,23 @@ class DotzReporter implements Reporter {
     this.store.setRunning(false)
 
     if (this.app) {
-      // Final flush to render any pending test results
+      // Flush any pending throttled store notifications + render
+      this.store.flushNotify()
       this.app.flush()
       await new Promise<void>((resolve) => {
         setTimeout(resolve, UNMOUNT_DELAY_MS)
       })
-      this.app.unmount()
-      this.patchedConsole?.[Symbol.dispose]()
-      this.term?.[Symbol.dispose]()
+      this.disposables?.[Symbol.dispose]()
+      this.disposables = null
       this.app = null
       this.term = null
       this.patchedConsole = null
       ;(
         globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
       ).IS_REACT_ACT_ENVIRONMENT = this.prevActEnv
+
+      // Print summary to console after clearing fullscreen
+      await printSummary(this.store, this.options)
     } else {
       await printSummary(this.store, this.options)
     }
