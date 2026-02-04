@@ -73,7 +73,7 @@ Original error: ${originalError.message}`
 
 /**
  * Get the test file path from error stack
- * This is a heuristic - it looks for .test.ts or .fuzz.test.ts files
+ * This is a heuristic - it looks for .test.ts or .fuzz.ts files
  */
 function getTestFilePath(): string {
   const err = new Error()
@@ -82,13 +82,13 @@ function getTestFilePath(): string {
   for (const line of stack) {
     // Look for test file patterns
     const match = line.match(
-      /\(([^)]+\.(test|fuzz\.test)\.(ts|tsx|js|jsx)):\d+:\d+\)/,
+      /\(([^)]+\.(test|fuzz)\.(ts|tsx|js|jsx)):\d+:\d+\)/,
     )
     if (match) return match[1]
 
     // Also try without parentheses
     const match2 = line.match(
-      /at\s+([^\s]+\.(test|fuzz\.test)\.(ts|tsx|js|jsx)):\d+:\d+/,
+      /at\s+([^\s]+\.(test|fuzz)\.(ts|tsx|js|jsx)):\d+:\d+/,
     )
     if (match2) return match2[1]
   }
