@@ -61,12 +61,8 @@ describe("chaos transformers", () => {
     })
 
     test("is deterministic with same seed", async () => {
-      const result1 = await collect(
-        drop(fromArray(ITEMS), 0.3, createSeededRandom(123)),
-      )
-      const result2 = await collect(
-        drop(fromArray(ITEMS), 0.3, createSeededRandom(123)),
-      )
+      const result1 = await collect(drop(fromArray(ITEMS), 0.3, createSeededRandom(123)))
+      const result2 = await collect(drop(fromArray(ITEMS), 0.3, createSeededRandom(123)))
       expect(result1).toEqual(result2)
     })
   })
@@ -94,12 +90,8 @@ describe("chaos transformers", () => {
     })
 
     test("is deterministic with same seed", async () => {
-      const result1 = await collect(
-        reorder(fromArray(ITEMS), 5, createSeededRandom(123)),
-      )
-      const result2 = await collect(
-        reorder(fromArray(ITEMS), 5, createSeededRandom(123)),
-      )
+      const result1 = await collect(reorder(fromArray(ITEMS), 5, createSeededRandom(123)))
+      const result2 = await collect(reorder(fromArray(ITEMS), 5, createSeededRandom(123)))
       expect(result1).toEqual(result2)
     })
   })
@@ -219,9 +211,7 @@ describe("chaos transformers", () => {
 
     test("unknown type is ignored", async () => {
       const rng = createSeededRandom(42)
-      const result = await collect(
-        chaos(fromArray(ITEMS), [{ type: "nonexistent", params: {} }], rng),
-      )
+      const result = await collect(chaos(fromArray(ITEMS), [{ type: "nonexistent", params: {} }], rng))
       expect(result).toEqual(ITEMS)
     })
 
@@ -238,14 +228,7 @@ describe("chaos transformers", () => {
         },
       }
 
-      const result = await collect(
-        chaos(
-          fromArray([1, 2, 3]),
-          [{ type: "double", params: {} }],
-          rng,
-          customRegistry,
-        ),
-      )
+      const result = await collect(chaos(fromArray([1, 2, 3]), [{ type: "double", params: {} }], rng, customRegistry))
       expect(result).toEqual([2, 4, 6])
     })
 
@@ -256,12 +239,8 @@ describe("chaos transformers", () => {
         { type: "duplicate", params: { rate: 0.2 } },
       ]
 
-      const result1 = await collect(
-        chaos(fromArray(ITEMS), configs, createSeededRandom(42)),
-      )
-      const result2 = await collect(
-        chaos(fromArray(ITEMS), configs, createSeededRandom(42)),
-      )
+      const result1 = await collect(chaos(fromArray(ITEMS), configs, createSeededRandom(42)))
+      const result2 = await collect(chaos(fromArray(ITEMS), configs, createSeededRandom(42)))
       expect(result1).toEqual(result2)
     })
   })

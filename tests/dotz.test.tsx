@@ -23,8 +23,7 @@ function setup(overrides: Partial<Options> = {}) {
     symbols: DEFAULT_SYMBOLS,
     ...overrides,
   }
-  const show = (width = 80) =>
-    render(<Report store={store} options={options} width={width} />)
+  const show = (width = 80) => render(<Report store={store} options={options} width={width} />)
   return { store, options, show }
 }
 
@@ -81,9 +80,7 @@ describe("dotz report", () => {
     store.addTest("t2", "pkg", "a.test.ts")
     store.addTest("t3", "pkg", "a.test.ts")
     store.updateTest("t1", "passed", 10)
-    store.updateTest("t2", "failed", 15, [
-      { message: "Expected true to be false" },
-    ])
+    store.updateTest("t2", "failed", 15, [{ message: "Expected true to be false" }])
     store.updateTest("t3", "skipped", 0)
 
     const { text } = show()
@@ -133,12 +130,7 @@ describe("dotz report", () => {
 
   it("file breakout: many tests across files triggers per-file lines", () => {
     const { store, show } = setup()
-    const files = [
-      "alpha.test.ts",
-      "beta.test.ts",
-      "gamma.test.ts",
-      "delta.test.ts",
-    ]
+    const files = ["alpha.test.ts", "beta.test.ts", "gamma.test.ts", "delta.test.ts"]
     // 200 tests across 4 files → >2 lines of dots → triggers breakout
     addTests(store, "big-package", files, 200)
 

@@ -68,21 +68,9 @@ export interface TestStore {
   flushNotify: () => void
   reset: () => void
   addTest: (id: string, category: string, file: string) => void
-  updateTest: (
-    id: string,
-    state: TestState,
-    duration: number,
-    errors?: TestError["errors"],
-    isNoisy?: boolean,
-  ) => void
+  updateTest: (id: string, state: TestState, duration: number, errors?: TestError["errors"], isNoisy?: boolean) => void
   setRunning: (running: boolean) => void
-  updateSlowest: (
-    name: string,
-    file: string,
-    line: number | undefined,
-    duration: number,
-    threshold: number,
-  ) => void
+  updateSlowest: (name: string, file: string, line: number | undefined, duration: number, threshold: number) => void
 }
 
 // =============================================================================
@@ -277,14 +265,10 @@ export function createTestStore(slowThreshold = 100): TestStore {
           catFileStats.duration += duration
           if (isSlow) catFileStats.slowCount++
         } else if (file) {
-          log.debug?.(
-            `updateTest: file not found in category files: ${category}/${file}`,
-          )
+          log.debug?.(`updateTest: file not found in category files: ${category}/${file}`)
         }
       } else if (category) {
-        log.debug?.(
-          `updateTest: category not found in categoryStats: ${category}`,
-        )
+        log.debug?.(`updateTest: category not found in categoryStats: ${category}`)
       }
 
       notify()
@@ -298,9 +282,7 @@ export function createTestStore(slowThreshold = 100): TestStore {
 
     updateSlowest: (name, file, line, duration, threshold) => {
       if (duration < threshold * 2) return
-      log.debug?.(
-        `slow test: ${name} duration=${duration}ms threshold=${threshold}ms`,
-      )
+      log.debug?.(`slow test: ${name} duration=${duration}ms threshold=${threshold}ms`)
       state.topSlowest.push({ name, file, line, duration })
       state.topSlowest.sort((a, b) => b.duration - a.duration)
       if (state.topSlowest.length > 20) state.topSlowest.length = 20

@@ -39,9 +39,7 @@ export function getTestSys(): TestSys {
 
   if (!VALID_VALUES.includes(value as TestSys)) {
     console.warn(
-      `Invalid TEST_SYS value: "${value}". ` +
-        `Valid values: ${VALID_VALUES.join(", ")}. ` +
-        `Defaulting to "fake".`,
+      `Invalid TEST_SYS value: "${value}". ` + `Valid values: ${VALID_VALUES.join(", ")}. ` + `Defaulting to "fake".`,
     )
     return "fake"
   }

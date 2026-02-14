@@ -35,10 +35,7 @@ export function createFuzzContext(seed: number): FuzzContext {
 /**
  * Create a replay context from a saved sequence
  */
-export function createReplayContext(
-  sequence: unknown[],
-  seed: number,
-): FuzzContext {
+export function createReplayContext(sequence: unknown[], seed: number): FuzzContext {
   return {
     history: [],
     replaySequence: sequence,

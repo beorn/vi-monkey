@@ -80,9 +80,7 @@ All composable on the existing gen/take/test.fuzz primitives:
 
 ```typescript
 gen((ctx) => {
-  const available = actions.filter(
-    (a) => preconditions[a]?.(getState()) ?? true,
-  )
+  const available = actions.filter((a) => preconditions[a]?.(getState()) ?? true)
   return ctx.random.pick(available)
 })
 ```

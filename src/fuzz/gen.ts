@@ -46,24 +46,14 @@ export type Picker<T> = T[] | [number, T][] | SyncPickerFn<T> | AsyncPickerFn<T>
  * Type guard for weighted tuples
  */
 function isWeightedTuple<T>(picker: unknown): picker is [number, T][] {
-  return (
-    Array.isArray(picker) &&
-    picker.length > 0 &&
-    Array.isArray(picker[0]) &&
-    typeof picker[0][0] === "number"
-  )
+  return Array.isArray(picker) && picker.length > 0 && Array.isArray(picker[0]) && typeof picker[0][0] === "number"
 }
 
 /**
  * Type guard for iterables (excluding strings)
  */
 function isIterable<T>(value: unknown): value is Iterable<T> {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    Symbol.iterator in value &&
-    typeof value !== "string"
-  )
+  return value !== null && typeof value === "object" && Symbol.iterator in value && typeof value !== "string"
 }
 
 /**
@@ -128,10 +118,7 @@ function createPicker<T>(
  * // Picker returns array (flattened)
  * gen(() => ['j', 'j', 'Enter'])  // yields: j, j, Enter, j, j, Enter, ...
  */
-export async function* gen<T>(
-  picker: Picker<T>,
-  seed?: number,
-): AsyncGenerator<T> {
+export async function* gen<T>(picker: Picker<T>, seed?: number): AsyncGenerator<T> {
   // Use context seed if available, otherwise provided seed or Date.now()
   const ctx = fuzzContext.getStore()
   const random = createSeededRandom(seed ?? ctx?.seed ?? Date.now())
@@ -156,10 +143,7 @@ export async function* gen<T>(
  *   await handle.press(key)
  * }
  */
-export async function* take<T>(
-  generator: AsyncIterable<T>,
-  n: number,
-): AsyncGenerator<T> {
+export async function* take<T>(generator: AsyncIterable<T>, n: number): AsyncGenerator<T> {
   const ctx = fuzzContext.getStore()
   let i = 0
 

@@ -222,12 +222,6 @@ describe("stateful generators", () => {
     }
 
     // First 3 should be increment, then reset
-    expect(actions).toEqual([
-      "increment",
-      "increment",
-      "increment",
-      "reset",
-      "increment",
-    ])
+    expect(actions).toEqual(["increment", "increment", "increment", "reset", "increment"])
   })
 })

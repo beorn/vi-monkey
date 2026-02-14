@@ -16,15 +16,10 @@
  */
 
 import { test as vitestTest, type TestOptions } from "vitest"
-import {
-  fuzzContext,
-  createFuzzContext,
-  createReplayContext,
-  type FuzzContext,
-} from "./context.js"
+import { fuzzContext, createFuzzContext, createReplayContext, type FuzzContext } from "./context.js"
 import { shrinkSequence, formatShrinkResult } from "./shrink.js"
 import { saveCase, loadCasesForTest, type SavedCase } from "./regression.js"
-import { parseSeed } from "../random.js"
+import { parseSeed, parseRepeats, deriveSeeds } from "../random.js"
 
 /** Options for test.fuzz */
 export interface FuzzTestOptions extends TestOptions {
@@ -81,15 +76,11 @@ function getTestFilePath(): string {
 
   for (const line of stack) {
     // Look for test file patterns
-    const match = line.match(
-      /\(([^)]+\.(test|fuzz)\.(ts|tsx|js|jsx)):\d+:\d+\)/,
-    )
+    const match = line.match(/\(([^)]+\.(test|fuzz)\.(ts|tsx|js|jsx)):\d+:\d+\)/)
     if (match) return match[1]
 
     // Also try without parentheses
-    const match2 = line.match(
-      /at\s+([^\s]+\.(test|fuzz)\.(ts|tsx|js|jsx)):\d+:\d+/,
-    )
+    const match2 = line.match(/at\s+([^\s]+\.(test|fuzz)\.(ts|tsx|js|jsx)):\d+:\d+/)
     if (match2) return match2[1]
   }
 
@@ -98,13 +89,103 @@ function getTestFilePath(): string {
 }
 
 /**
- * Create the test.fuzz wrapper
+ * Run a single fuzz test body with a specific seed.
+ * Handles replay, shrinking, and saving of failing cases.
  */
-function createFuzzTest(
+async function runFuzzBody(
   name: string,
   fn: () => Promise<void>,
-  options: FuzzTestOptions = {},
+  seed: number,
+  opts: { shrink: boolean; save: boolean; replay: boolean; maxShrinkAttempts: number },
 ) {
+  const testFilePath = getTestFilePath()
+
+  // Replay saved failing sequences first
+  if (opts.replay) {
+    const savedCases = loadCasesForTest(testFilePath, name)
+    for (const savedCase of savedCases) {
+      const replayCtx = createReplayContext(savedCase.sequence, savedCase.seed)
+      try {
+        await fuzzContext.run(replayCtx, fn)
+        // If replay passes, the bug might be fixed - but we still run the main test
+      } catch (error) {
+        // Replay still fails - throw with saved context
+        throw new FuzzError(error as Error, {
+          original: savedCase.originalLength ?? savedCase.sequence.length,
+          shrunk: savedCase.sequence.length,
+          sequence: savedCase.sequence,
+          seed: savedCase.seed,
+        })
+      }
+    }
+  }
+
+  // Run the main fuzz test
+  const ctx = createFuzzContext(seed)
+
+  try {
+    await fuzzContext.run(ctx, fn)
+  } catch (error) {
+    // Test failed - attempt shrinking
+    if (ctx.history.length > 0) {
+      let minimalSequence = ctx.history
+      let shrinkResult
+
+      if (opts.shrink) {
+        // Define the test runner for shrinking
+        const runWithSequence = async (seq: unknown[]) => {
+          const replayCtx = createReplayContext(seq, seed)
+          try {
+            await fuzzContext.run(replayCtx, fn)
+            return true // passed
+          } catch {
+            return false // still fails
+          }
+        }
+
+        shrinkResult = await shrinkSequence(ctx.history, runWithSequence, {
+          maxAttempts: opts.maxShrinkAttempts,
+        })
+        minimalSequence = shrinkResult.shrunk
+
+        // Log shrink result
+        console.log(formatShrinkResult(shrinkResult))
+      }
+
+      // Save failing case
+      if (opts.save) {
+        const savedCase: SavedCase = {
+          test: name,
+          seed,
+          sequence: minimalSequence,
+          error: String(error),
+          timestamp: new Date().toISOString(),
+          originalLength: ctx.history.length,
+        }
+        const filepath = saveCase(testFilePath, name, savedCase)
+        console.log(`Saved failing case to: ${filepath}`)
+      }
+
+      throw new FuzzError(error as Error, {
+        original: ctx.history.length,
+        shrunk: minimalSequence.length,
+        sequence: minimalSequence,
+        seed,
+      })
+    }
+
+    throw error
+  }
+}
+
+/**
+ * Create the test.fuzz wrapper
+ *
+ * When FUZZ_REPEATS > 1, registers multiple vitest tests — one per seed —
+ * so each gets its own result in the reporter and failures are independently
+ * visible. Seeds are deterministically derived from the base seed.
+ */
+function createFuzzTest(name: string, fn: () => Promise<void>, options: FuzzTestOptions = {}) {
   const {
     seed = parseSeed("env"),
     shrink = true,
@@ -114,90 +195,24 @@ function createFuzzTest(
     ...testOptions
   } = options
 
-  // Vitest 4: options as second arg, function as third
-  return vitestTest(name, testOptions, async () => {
-    const testFilePath = getTestFilePath()
+  const repeats = parseRepeats()
+  const bodyOpts = { shrink, save, replay, maxShrinkAttempts }
 
-    // Replay saved failing sequences first
-    if (replay) {
-      const savedCases = loadCasesForTest(testFilePath, name)
-      for (const savedCase of savedCases) {
-        const replayCtx = createReplayContext(
-          savedCase.sequence,
-          savedCase.seed,
-        )
-        try {
-          await fuzzContext.run(replayCtx, fn)
-          // If replay passes, the bug might be fixed - but we still run the main test
-        } catch (error) {
-          // Replay still fails - throw with saved context
-          throw new FuzzError(error as Error, {
-            original: savedCase.originalLength ?? savedCase.sequence.length,
-            shrunk: savedCase.sequence.length,
-            sequence: savedCase.sequence,
-            seed: savedCase.seed,
-          })
-        }
-      }
-    }
+  if (repeats <= 1) {
+    // Single run (default) — original behavior
+    return vitestTest(name, testOptions, async () => {
+      await runFuzzBody(name, fn, seed, bodyOpts)
+    })
+  }
 
-    // Run the main fuzz test
-    const ctx = createFuzzContext(seed)
-
-    try {
-      await fuzzContext.run(ctx, fn)
-    } catch (error) {
-      // Test failed - attempt shrinking
-      if (ctx.history.length > 0) {
-        let minimalSequence = ctx.history
-        let shrinkResult
-
-        if (shrink) {
-          // Define the test runner for shrinking
-          const runWithSequence = async (seq: unknown[]) => {
-            const replayCtx = createReplayContext(seq, seed)
-            try {
-              await fuzzContext.run(replayCtx, fn)
-              return true // passed
-            } catch {
-              return false // still fails
-            }
-          }
-
-          shrinkResult = await shrinkSequence(ctx.history, runWithSequence, {
-            maxAttempts: maxShrinkAttempts,
-          })
-          minimalSequence = shrinkResult.shrunk
-
-          // Log shrink result
-          console.log(formatShrinkResult(shrinkResult))
-        }
-
-        // Save failing case
-        if (save) {
-          const savedCase: SavedCase = {
-            test: name,
-            seed,
-            sequence: minimalSequence,
-            error: String(error),
-            timestamp: new Date().toISOString(),
-            originalLength: ctx.history.length,
-          }
-          const filepath = saveCase(testFilePath, name, savedCase)
-          console.log(`Saved failing case to: ${filepath}`)
-        }
-
-        throw new FuzzError(error as Error, {
-          original: ctx.history.length,
-          shrunk: minimalSequence.length,
-          sequence: minimalSequence,
-          seed,
-        })
-      }
-
-      throw error
-    }
-  })
+  // Multiple runs — register one test per seed
+  const seeds = deriveSeeds(seed, repeats)
+  for (let i = 0; i < seeds.length; i++) {
+    const s = seeds[i]
+    vitestTest(`${name} [seed=${s}]`, testOptions, async () => {
+      await runFuzzBody(name, fn, s, bodyOpts)
+    })
+  }
 }
 
 // Type for the fuzz function
@@ -225,12 +240,4 @@ const fuzz: FuzzFn = (
 export const test = Object.assign(vitestTest, { fuzz })
 
 // Re-export vitest test types
-export {
-  describe,
-  expect,
-  it,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-} from "vitest"
+export { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from "vitest"

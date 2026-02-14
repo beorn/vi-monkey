@@ -26,11 +26,7 @@ import type { SeededRandom } from "../random.js"
  * Skip items with probability `rate`.
  * Simulates message loss, queue overflow, network drops.
  */
-export async function* drop<T>(
-  source: AsyncIterable<T>,
-  rate: number,
-  rng: SeededRandom,
-): AsyncGenerator<T> {
+export async function* drop<T>(source: AsyncIterable<T>, rate: number, rng: SeededRandom): AsyncGenerator<T> {
   for await (const item of source) {
     if (!rng.bool(rate)) yield item
   }
@@ -40,11 +36,7 @@ export async function* drop<T>(
  * Buffer up to `windowSize` items, shuffle, yield when buffer is full.
  * Simulates out-of-order delivery, non-deterministic event ordering.
  */
-export async function* reorder<T>(
-  source: AsyncIterable<T>,
-  windowSize: number,
-  rng: SeededRandom,
-): AsyncGenerator<T> {
+export async function* reorder<T>(source: AsyncIterable<T>, windowSize: number, rng: SeededRandom): AsyncGenerator<T> {
   const buffer: T[] = []
   for await (const item of source) {
     buffer.push(item)
@@ -64,11 +56,7 @@ export async function* reorder<T>(
  * With probability `rate`, yield the item twice.
  * Simulates duplicate delivery, at-least-once semantics.
  */
-export async function* duplicate<T>(
-  source: AsyncIterable<T>,
-  rate: number,
-  rng: SeededRandom,
-): AsyncGenerator<T> {
+export async function* duplicate<T>(source: AsyncIterable<T>, rate: number, rng: SeededRandom): AsyncGenerator<T> {
   for await (const item of source) {
     yield item
     if (rng.bool(rate)) yield item
@@ -79,10 +67,7 @@ export async function* duplicate<T>(
  * Collect `burstSize` items, then yield them all at once.
  * Simulates bursty delivery, batched network packets.
  */
-export async function* burst<T>(
-  source: AsyncIterable<T>,
-  burstSize: number,
-): AsyncGenerator<T> {
+export async function* burst<T>(source: AsyncIterable<T>, burstSize: number): AsyncGenerator<T> {
   const buffer: T[] = []
   for await (const item of source) {
     buffer.push(item)
@@ -98,10 +83,7 @@ export async function* burst<T>(
  * Skip the first `count` items.
  * Simulates missed events during initialization, late subscriber.
  */
-export async function* initGap<T>(
-  source: AsyncIterable<T>,
-  count: number,
-): AsyncGenerator<T> {
+export async function* initGap<T>(source: AsyncIterable<T>, count: number): AsyncGenerator<T> {
   let skipped = 0
   for await (const item of source) {
     if (skipped < count) {
@@ -142,11 +124,7 @@ export interface ChaosConfig {
 /** Registry of transformer factories keyed by config type */
 export type ChaosRegistry<T> = Record<
   string,
-  (
-    source: AsyncIterable<T>,
-    params: Record<string, unknown>,
-    rng: SeededRandom,
-  ) => AsyncIterable<T>
+  (source: AsyncIterable<T>, params: Record<string, unknown>, rng: SeededRandom) => AsyncIterable<T>
 >
 
 /** Built-in transformer registry (works for any T) */
@@ -156,8 +134,7 @@ const BUILTIN_REGISTRY: ChaosRegistry<unknown> = {
   duplicate: (s, p, rng) => duplicate(s, (p.rate as number) ?? 0.3, rng),
   burst: (s, p) => burst(s, (p.burstSize as number) ?? 10),
   init_gap: (s, p) => initGap(s, (p.count as number) ?? 5),
-  delay: (s, p, rng) =>
-    delay(s, (p.minMs as number) ?? 1, (p.maxMs as number) ?? 5, rng),
+  delay: (s, p, rng) => delay(s, (p.minMs as number) ?? 1, (p.maxMs as number) ?? 5, rng),
 }
 
 /**

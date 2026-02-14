@@ -19,10 +19,7 @@ export interface SeededRandom {
   pick<T>(array: readonly T[]): T
 
   /** Pick a random element with weights */
-  weightedPick<T extends string>(
-    items: readonly T[],
-    weights: Partial<Record<T, number>>,
-  ): T
+  weightedPick<T extends string>(items: readonly T[], weights: Partial<Record<T, number>>): T
 
   /** Shuffle an array (returns new array) */
   shuffle<T>(array: readonly T[]): T[]
@@ -85,10 +82,7 @@ export function createSeededRandom(seed?: number): SeededRandom {
       return array[random.int(0, array.length - 1)]
     },
 
-    weightedPick<T extends string>(
-      items: readonly T[],
-      weights: Partial<Record<T, number>>,
-    ): T {
+    weightedPick<T extends string>(items: readonly T[], weights: Partial<Record<T, number>>): T {
       // Build cumulative weights
       const cumulative: { item: T; cumWeight: number }[] = []
       let total = 0
@@ -152,4 +146,35 @@ export function parseSeed(source: "env" | "random" = "env"): number {
     }
   }
   return Date.now()
+}
+
+/**
+ * Parse FUZZ_REPEATS from environment (default: 1)
+ *
+ * Controls how many times each test.fuzz() test runs with different seeds.
+ * Use FUZZ_REPEATS=10000 for CI nightly runs.
+ */
+export function parseRepeats(): number {
+  const env = process.env.FUZZ_REPEATS
+  if (env) {
+    const parsed = parseInt(env, 10)
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed
+    }
+    console.warn(`Invalid FUZZ_REPEATS: "${env}", using 1`)
+  }
+  return 1
+}
+
+/**
+ * Derive N unique seeds from a base seed using LCG
+ */
+export function deriveSeeds(baseSeed: number, count: number): number[] {
+  const seeds: number[] = []
+  let state = baseSeed
+  for (let i = 0; i < count; i++) {
+    state = (LCG_A * state + LCG_C) % LCG_M
+    seeds.push(state)
+  }
+  return seeds
 }

@@ -55,11 +55,10 @@ describe("streaming", () => {
     const { stream, chunks } = createMockStdout()
     const store = createTestStore(100)
     const term = createTerm({ stdout: stream })
-    const app = await render(
-      <Report store={store} options={options} width={80} />,
-      term,
-      { mode: "inline", alternateScreen: false },
-    )
+    const app = await render(<Report store={store} options={options} width={80} />, term, {
+      mode: "inline",
+      alternateScreen: false,
+    })
 
     const text = () => stripAnsi(chunks.join(""))
 

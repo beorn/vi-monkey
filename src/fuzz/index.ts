@@ -53,15 +53,7 @@ export { gen, take, type Picker, type PickerContext } from "./gen.js"
 
 // test.fuzz wrapper
 export { test, FuzzError, type FuzzTestOptions } from "./test-fuzz.js"
-export {
-  describe,
-  expect,
-  it,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  afterEach,
-} from "./test-fuzz.js"
+export { describe, expect, it, beforeAll, afterAll, beforeEach, afterEach } from "./test-fuzz.js"
 
 // Context (for advanced use)
 export {
@@ -74,12 +66,7 @@ export {
 } from "./context.js"
 
 // Shrinking (for advanced use)
-export {
-  shrinkSequence,
-  formatShrinkResult,
-  type ShrinkOptions,
-  type ShrinkResult,
-} from "./shrink.js"
+export { shrinkSequence, formatShrinkResult, type ShrinkOptions, type ShrinkResult } from "./shrink.js"
 
 // Regression (for advanced use)
 export {
@@ -93,4 +80,4 @@ export {
 } from "./regression.js"
 
 // Re-export random utilities
-export { createSeededRandom, parseSeed, type SeededRandom } from "../random.js"
+export { createSeededRandom, parseSeed, parseRepeats, deriveSeeds, type SeededRandom } from "../random.js"

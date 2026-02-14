@@ -8,32 +8,11 @@
 
 import * as fs from "node:fs"
 import React, { useMemo, useSyncExternalStore, type ReactNode } from "react"
-import type {
-  Reporter,
-  TestCase,
-  TestModule,
-  TestSpecification,
-  TestSuite,
-  Vitest,
-} from "vitest/node"
-import {
-  Box,
-  Text,
-  Console,
-  useContentRect,
-  patchConsole,
-  type Instance,
-  type Term,
-  type PatchedConsole,
-} from "inkx"
+import type { Reporter, TestCase, TestModule, TestSpecification, TestSuite, Vitest } from "vitest/node"
+import { Box, Text, Console, useContentRect, patchConsole, type Instance, type Term, type PatchedConsole } from "inkx"
 import { createLogger } from "@beorn/logger"
 
-import {
-  createTestStore,
-  type TestState,
-  type TestStore,
-  type TestStoreState,
-} from "./store.js"
+import { createTestStore, type TestState, type TestStore, type TestStoreState } from "./store.js"
 
 const log = createLogger("vitestx:dotz")
 
@@ -79,14 +58,8 @@ export type Options = Required<ReporterOptions>
  * Duration range [0, threshold * DURATION_MULTIPLIER] maps to symbol indices [0, n-1].
  * Tests exceeding the range get the last symbol with bright styling.
  */
-export function durationToSymbol(
-  duration: number,
-  threshold: number,
-  symbols: string[],
-) {
-  const stage = Math.floor(
-    ((duration / threshold) * symbols.length) / DURATION_MULTIPLIER,
-  )
+export function durationToSymbol(duration: number, threshold: number, symbols: string[]) {
+  const stage = Math.floor(((duration / threshold) * symbols.length) / DURATION_MULTIPLIER)
   const maxIndex = symbols.length - 1
   return {
     char: symbols[Math.min(stage, maxIndex)] ?? "●",
@@ -111,12 +84,7 @@ export interface ReportProps {
   console?: PatchedConsole
 }
 
-export function Report({
-  store,
-  options,
-  width,
-  console: patched,
-}: ReportProps) {
+export function Report({ store, options, width, console: patched }: ReportProps) {
   const state = useStore(store)
   // During live streaming, only show dots + summary to avoid exceeding terminal height.
   // Full report (package table, slow tests, failures) is shown in final static output.
@@ -141,17 +109,11 @@ export function StatusDot({ status }: { status: StatusKey }) {
 }
 
 /** Single dot for legend use only. Bulk rendering uses DotStrip. */
-type DotProps =
-  | { status: "passed"; duration: number; options: Options }
-  | { status: StatusKey }
+type DotProps = { status: "passed"; duration: number; options: Options } | { status: StatusKey }
 
 export function Dot(props: DotProps) {
   if (props.status !== "passed") return <StatusDot status={props.status} />
-  const { char, bright } = durationToSymbol(
-    props.duration,
-    props.options.slowThreshold,
-    props.options.symbols,
-  )
+  const { char, bright } = durationToSymbol(props.duration, props.options.slowThreshold, props.options.symbols)
   return (
     <Text color="green" dim={!bright}>
       {char}
@@ -163,11 +125,7 @@ export function Dot(props: DotProps) {
 type DotStyle = { color: string; dim: boolean; bold?: boolean }
 
 /** Resolve a test ID to its dot character and style */
-function resolveDot(
-  id: string,
-  state: TestStoreState,
-  options: Options,
-): { char: string; style: DotStyle } {
+function resolveDot(id: string, state: TestStoreState, options: Options): { char: string; style: DotStyle } {
   const testState = state.testStates.get(id) ?? "pending"
   const isNoisy = state.noisyTestIds.has(id)
 
@@ -188,11 +146,7 @@ function resolveDot(
 
   // Passed: duration-based symbol
   const duration = state.testDurations.get(id) ?? 0
-  const { char, bright } = durationToSymbol(
-    duration,
-    options.slowThreshold,
-    options.symbols,
-  )
+  const { char, bright } = durationToSymbol(duration, options.slowThreshold, options.symbols)
   return { char, style: { color: "green", dim: !bright } }
 }
 
@@ -205,15 +159,7 @@ function styleKey(s: DotStyle): string {
  * Batches consecutive dots with the same style into single <Text> nodes.
  * For 4700 tests, this produces ~10-50 React elements instead of 4700.
  */
-export function DotStrip({
-  testIds,
-  state,
-  options,
-}: {
-  testIds: string[]
-  state: TestStoreState
-  options: Options
-}) {
+export function DotStrip({ testIds, state, options }: { testIds: string[]; state: TestStoreState; options: Options }) {
   const groups: ReactNode[] = []
   let currentChars = ""
   let currentStyle: DotStyle | null = null
@@ -227,11 +173,7 @@ export function DotStrip({
     } else {
       if (currentStyle && currentChars) {
         groups.push(
-          <Text
-            key={groups.length}
-            color={currentStyle.color}
-            dim={currentStyle.dim}
-          >
+          <Text key={groups.length} color={currentStyle.color} dim={currentStyle.dim}>
             {currentChars}
           </Text>,
         )
@@ -243,11 +185,7 @@ export function DotStrip({
   }
   if (currentStyle && currentChars) {
     groups.push(
-      <Text
-        key={groups.length}
-        color={currentStyle.color}
-        dim={currentStyle.dim}
-      >
+      <Text key={groups.length} color={currentStyle.color} dim={currentStyle.dim}>
         {currentChars}
       </Text>,
     )
@@ -256,18 +194,8 @@ export function DotStrip({
   return <>{groups}</>
 }
 
-export function DurationSymbol({
-  duration,
-  options,
-}: {
-  duration: number
-  options: Options
-}) {
-  const { char, bright } = durationToSymbol(
-    duration,
-    options.slowThreshold,
-    options.symbols,
-  )
+export function DurationSymbol({ duration, options }: { duration: number; options: Options }) {
+  const { char, bright } = durationToSymbol(duration, options.slowThreshold, options.symbols)
   return (
     <Text color="green" dim={!bright}>
       {char}
@@ -277,13 +205,7 @@ export function DurationSymbol({
 
 // --- Layout components ---
 
-function LegendItem({
-  children,
-  label,
-}: {
-  children: ReactNode
-  label: string
-}) {
+function LegendItem({ children, label }: { children: ReactNode; label: string }) {
   return (
     <Box flexDirection="row" gap={1}>
       {children}
@@ -300,11 +222,7 @@ export function DotsLegend({ options }: { options: Options }) {
         <Dot status="passed" duration={0} options={options} />
       </LegendItem>
       <LegendItem label="slow">
-        <Dot
-          status="passed"
-          duration={options.slowThreshold * DURATION_MULTIPLIER}
-          options={options}
-        />
+        <Dot status="passed" duration={options.slowThreshold * DURATION_MULTIPLIER} options={options} />
       </LegendItem>
       {(Object.keys(STATUS_DOTS) as StatusKey[]).map((status) => (
         <LegendItem key={status} label={STATUS_DOTS[status].label}>
@@ -362,8 +280,7 @@ function computeBreakouts(
     const fileCount = catStats.fileOrder.length
 
     // Break out when: >2 lines of dots, or >1 line with >3 files
-    const wantsBreakout =
-      fileCount > 1 && (packageLines > 2 || (packageLines > 1 && fileCount > 3))
+    const wantsBreakout = fileCount > 1 && (packageLines > 2 || (packageLines > 1 && fileCount > 3))
 
     // Lines if broken out: 1 header + 1 per file (each file's dots may wrap)
     const linesIfBreakout = wantsBreakout
@@ -372,13 +289,7 @@ function computeBreakouts(
           const fileStats = catStats.files.get(file)
           if (!fileStats) return sum + 1
           const fileDotsWidth = dotsWidth
-          return (
-            sum +
-            Math.max(
-              1,
-              Math.ceil(fileStats.testIds.length / Math.max(1, fileDotsWidth)),
-            )
-          )
+          return sum + Math.max(1, Math.ceil(fileStats.testIds.length / Math.max(1, fileDotsWidth)))
         }, 0)
       : packageLines
 
@@ -393,16 +304,11 @@ function computeBreakouts(
 
   // Budget: available screen lines for dots section (leave room for legend, summary, etc.)
   const availableLines = Math.max(10, screenHeight - 10)
-  let totalLines = packages.reduce(
-    (sum, p) => sum + (p.wantsBreakout ? p.linesIfBreakout : p.linesIfNot),
-    0,
-  )
+  let totalLines = packages.reduce((sum, p) => sum + (p.wantsBreakout ? p.linesIfBreakout : p.linesIfNot), 0)
 
   // If over budget, disable breakouts starting with smallest packages first
   if (totalLines > availableLines) {
-    const sorted = [...packages]
-      .filter((p) => p.wantsBreakout)
-      .sort((a, b) => a.fileCount - b.fileCount)
+    const sorted = [...packages].filter((p) => p.wantsBreakout).sort((a, b) => a.fileCount - b.fileCount)
 
     for (const pkg of sorted) {
       if (totalLines <= availableLines) break
@@ -414,24 +320,12 @@ function computeBreakouts(
   return new Set(packages.filter((p) => p.wantsBreakout).map((p) => p.category))
 }
 
-function DotsSectionInner({
-  state,
-  options,
-  width: cols,
-}: Omit<DotsSectionProps, "width"> & { width: number }) {
-  const maxLabelWidth = Math.min(
-    Math.max(...state.categoryOrder.map((c) => c.length), 12) + 1,
-    24,
-  )
+function DotsSectionInner({ state, options, width: cols }: Omit<DotsSectionProps, "width"> & { width: number }) {
+  const maxLabelWidth = Math.min(Math.max(...state.categoryOrder.map((c) => c.length), 12) + 1, 24)
   const dotsWidth = cols - maxLabelWidth - 1
 
   // Screen-aware file breakout (recomputed each render — cheap O(categories) scan)
-  const fileBreakouts = computeBreakouts(
-    state,
-    maxLabelWidth,
-    dotsWidth,
-    process.stdout.rows || 40,
-  )
+  const fileBreakouts = computeBreakouts(state, maxLabelWidth, dotsWidth, process.stdout.rows || 40)
 
   return (
     <Box id="dots" flexDirection="column">
@@ -449,10 +343,7 @@ function DotsSectionInner({
               {catStats.fileOrder.map((file) => {
                 const fileStats = catStats.files.get(file)
                 if (!fileStats) return null
-                const name = file.replace(
-                  /\.(test|spec)\.(ts|tsx|js|jsx|md)$/,
-                  "",
-                )
+                const name = file.replace(/\.(test|spec)\.(ts|tsx|js|jsx|md)$/, "")
                 return (
                   <Box key={file} flexDirection="row">
                     <Box width={maxLabelWidth}>
@@ -462,11 +353,7 @@ function DotsSectionInner({
                       </Text>
                     </Box>
                     <Box flexDirection="row" flexWrap="wrap" width={dotsWidth}>
-                      <DotStrip
-                        testIds={fileStats.testIds}
-                        state={state}
-                        options={options}
-                      />
+                      <DotStrip testIds={fileStats.testIds} state={state} options={options} />
                     </Box>
                   </Box>
                 )
@@ -481,11 +368,7 @@ function DotsSectionInner({
               <Text color="cyan">{category}</Text>
             </Box>
             <Box flexDirection="row" flexWrap="wrap" width={dotsWidth}>
-              <DotStrip
-                testIds={catStats.testIds}
-                state={state}
-                options={options}
-              />
+              <DotStrip testIds={catStats.testIds} state={state} options={options} />
             </Box>
           </Box>
         )
@@ -547,10 +430,7 @@ export function Summary({ state }: { state: TestStoreState }) {
 }
 
 export function PackageTable({ state }: { state: TestStoreState }) {
-  const w = useMemo(
-    () => Math.max(...state.categoryOrder.map((c) => c.length), 12),
-    [state.categoryOrder],
-  )
+  const w = useMemo(() => Math.max(...state.categoryOrder.map((c) => c.length), 12), [state.categoryOrder])
 
   if (state.categoryOrder.length <= 1) return null
 
@@ -582,8 +462,7 @@ export function PackageTable({ state }: { state: TestStoreState }) {
         const st = state.categoryStats.get(cat)
         if (!st) return null
         const n = st.passed + st.failed + st.skipped
-        const slow =
-          st.slowCount > 0 ? String(st.slowCount).padStart(6) : "     -"
+        const slow = st.slowCount > 0 ? String(st.slowCount).padStart(6) : "     -"
         const rowColor = st.failed > 0 ? ("red" as const) : undefined
         const rowDim = st.failed <= 0
         return (
@@ -615,13 +494,7 @@ export function PackageTable({ state }: { state: TestStoreState }) {
   )
 }
 
-export function SlowTests({
-  state,
-  options,
-}: {
-  state: TestStoreState
-  options: Options
-}) {
+export function SlowTests({ state, options }: { state: TestStoreState; options: Options }) {
   if (!options.showSlow || state.topSlowest.length === 0) return null
 
   const { symbols, slowThreshold } = options
@@ -750,18 +623,10 @@ class DotzReporter implements Reporter {
     this.term = stack.use(createTerm())
     this.patchedConsole = stack.use(patchConsole(console))
     this.app = stack.use(
-      await render(
-        <Report
-          store={this.store}
-          options={this.options}
-          console={this.patchedConsole}
-        />,
-        this.term,
-        {
-          // mode: "inline",
-          // alternateScreen: false,
-        },
-      ),
+      await render(<Report store={this.store} options={this.options} console={this.patchedConsole} />, this.term, {
+        // mode: "inline",
+        // alternateScreen: false,
+      }),
     )
   }
 
@@ -778,11 +643,7 @@ class DotzReporter implements Reporter {
   onTestCaseReady(testCase: TestCase) {
     if (this.finishedTests.has(testCase.id)) return
     const moduleId = getModuleId(testCase.module)
-    this.store.addTest(
-      testCase.id,
-      extractCategory(moduleId),
-      extractFileName(moduleId),
-    )
+    this.store.addTest(testCase.id, extractCategory(moduleId), extractFileName(moduleId))
   }
 
   onTestCaseResult(testCase: TestCase) {
@@ -794,12 +655,7 @@ class DotzReporter implements Reporter {
     const duration = diagnostic?.duration ?? 0
     const moduleId = getModuleId(module)
 
-    const testState: TestState =
-      result.state === "passed"
-        ? "passed"
-        : result.state === "failed"
-          ? "failed"
-          : "skipped"
+    const testState: TestState = result.state === "passed" ? "passed" : result.state === "failed" ? "failed" : "skipped"
 
     this.finishedTests.add(id)
 
@@ -816,21 +672,12 @@ class DotzReporter implements Reporter {
     const line = extractLineNumber(testCase)
 
     this.store.updateTest(id, testState, duration, errors, isNoisy)
-    this.store.updateSlowest(
-      name,
-      relativePath(moduleId),
-      line,
-      duration,
-      this.options.slowThreshold,
-    )
+    this.store.updateSlowest(name, relativePath(moduleId), line, duration, this.options.slowThreshold)
   }
 
   onTestModuleEnd(_: TestModule) {}
 
-  async onTestRunEnd(
-    testModules?: Iterable<TestModule>,
-    errors?: readonly unknown[],
-  ) {
+  async onTestRunEnd(testModules?: Iterable<TestModule>, errors?: readonly unknown[]) {
     log.debug?.("onTestRunEnd", {
       testModules: !!testModules,
       errors: (errors as unknown[])?.length,
@@ -860,9 +707,7 @@ class DotzReporter implements Reporter {
       this.app = null
       this.term = null
       this.patchedConsole = null
-      ;(
-        globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
-      ).IS_REACT_ACT_ENVIRONMENT = this.prevActEnv
+      ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = this.prevActEnv
 
       // Print summary to console after clearing fullscreen
       await printSummary(this.store, this.options)
@@ -920,17 +765,13 @@ function extractCategory(moduleId: string) {
 
   const groupingDirs = ["packages", "apps", "vendor", "tests"]
   const fallback =
-    parts.length >= 2 && parts[0] && groupingDirs.includes(parts[0])
-      ? `${parts[0]}/${parts[1]}`
-      : parts[0] || "root"
+    parts.length >= 2 && parts[0] && groupingDirs.includes(parts[0]) ? `${parts[0]}/${parts[1]}` : parts[0] || "root"
   packageNameCache.set(fallback, fallback)
   return fallback
 }
 
 function extractLineNumber(testCase: TestCase) {
-  const meta = testCase.meta() as
-    | { mdtestLocation?: { line?: number } }
-    | undefined
+  const meta = testCase.meta() as { mdtestLocation?: { line?: number } } | undefined
   const loc = (testCase as { location?: { line?: number } }).location
   return meta?.mdtestLocation?.line ?? loc?.line
 }
@@ -939,10 +780,7 @@ async function printSummary(store: TestStore, options: Options) {
   const { renderStatic } = await import("inkx")
   const width = process.stdout.columns || 80
   // Use large height to avoid truncation - static output doesn't need fixed height
-  const output = await renderStatic(
-    <Report store={store} options={options} width={width} />,
-    { width, height: 1000 },
-  )
+  const output = await renderStatic(<Report store={store} options={options} width={width} />, { width, height: 1000 })
   // Trim trailing empty lines from the buffer output
   console.log(output.replace(/\n+$/, ""))
 }
@@ -965,14 +803,9 @@ function exportPerformance(state: TestStoreState, options: Options) {
           failed: state.failed,
           skipped: state.skipped,
           elapsed: Date.now() - state.startTime,
-          testDuration: [...state.testDurations.values()].reduce(
-            (a, b) => a + b,
-            0,
-          ),
+          testDuration: [...state.testDurations.values()].reduce((a, b) => a + b, 0),
         },
-        slowTests: allTests
-          .filter((t) => t.duration >= options.slowThreshold)
-          .sort((a, b) => b.duration - a.duration),
+        slowTests: allTests.filter((t) => t.duration >= options.slowThreshold).sort((a, b) => b.duration - a.duration),
         allTests,
       },
       null,

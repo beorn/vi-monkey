@@ -6,14 +6,7 @@
  * are replayed first to ensure bugs don't regress.
  */
 
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync,
-  unlinkSync,
-} from "node:fs"
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from "node:fs"
 import { dirname, join, basename } from "node:path"
 
 /** Failure case saved to disk */
@@ -58,11 +51,7 @@ function getCaseFilename(testName: string): string {
 /**
  * Save a failing case to __fuzz_cases__/
  */
-export function saveCase(
-  testFilePath: string,
-  testName: string,
-  failure: SavedCase,
-): string {
+export function saveCase(testFilePath: string, testName: string, failure: SavedCase): string {
   const dir = getFuzzCasesDir(testFilePath)
   mkdirSync(dir, { recursive: true })
 
@@ -96,10 +85,7 @@ export function loadCases(testFilePath: string): SavedCase[] {
 /**
  * Load saved cases for a specific test name
  */
-export function loadCasesForTest(
-  testFilePath: string,
-  testName: string,
-): SavedCase[] {
+export function loadCasesForTest(testFilePath: string, testName: string): SavedCase[] {
   return loadCases(testFilePath).filter((c) => c.test === testName)
 }
 
