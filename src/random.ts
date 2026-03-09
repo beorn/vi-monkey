@@ -40,6 +40,24 @@ const LCG_C = 12345
 const LCG_M = 2 ** 31
 
 /**
+ * Pick a random element from weighted tuples using a pre-generated random float.
+ *
+ * @param tuples - Array of [weight, value] pairs
+ * @param rand - Random float in [0, 1)
+ * @returns The selected value
+ */
+export function weightedPickFromTuples<T>(tuples: readonly (readonly [number, T])[], rand: number): T {
+  let total = 0
+  for (const [w] of tuples) total += w
+  let r = rand * total
+  for (const [weight, value] of tuples) {
+    r -= weight
+    if (r <= 0) return value
+  }
+  return tuples[tuples.length - 1][1]
+}
+
+/**
  * Create a seeded random number generator
  *
  * @param seed - Initial seed (uses Date.now() if not provided)
@@ -83,26 +101,8 @@ export function createSeededRandom(seed?: number): SeededRandom {
     },
 
     weightedPick<T extends string>(items: readonly T[], weights: Partial<Record<T, number>>): T {
-      // Build cumulative weights
-      const cumulative: { item: T; cumWeight: number }[] = []
-      let total = 0
-
-      for (const item of items) {
-        const weight = weights[item] ?? 1
-        total += weight
-        cumulative.push({ item, cumWeight: total })
-      }
-
-      // Pick based on random value
-      const value = random.float() * total
-      for (const { item, cumWeight } of cumulative) {
-        if (value < cumWeight) {
-          return item
-        }
-      }
-
-      // Fallback (shouldn't reach here)
-      return items[items.length - 1]
+      const tuples: [number, T][] = items.map((item) => [weights[item] ?? 1, item])
+      return weightedPickFromTuples(tuples, random.float())
     },
 
     shuffle<T>(array: readonly T[]): T[] {

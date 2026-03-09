@@ -16,5 +16,5 @@
     "noEmit": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests", "examples", "src/dotz"]
+  "exclude": ["node_modules", "dist", "tests"]
 }

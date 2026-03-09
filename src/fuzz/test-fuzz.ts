@@ -38,7 +38,6 @@ export interface FuzzTestOptions extends TestOptions {
 /** Error with fuzz context attached */
 export class FuzzError extends Error {
   readonly sequence: unknown[]
-  readonly shrunk: unknown[]
   readonly seed: number
   readonly originalError: Error
 
@@ -60,7 +59,6 @@ Original error: ${originalError.message}`
     super(msg)
     this.name = "FuzzError"
     this.sequence = info.sequence
-    this.shrunk = info.sequence
     this.seed = info.seed
     this.originalError = originalError
   }

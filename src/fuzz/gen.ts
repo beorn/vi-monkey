@@ -5,7 +5,7 @@
  * take(generator, n) limits iterations and auto-tracks in test.fuzz().
  */
 
-import { createSeededRandom, type SeededRandom } from "../random.js"
+import { createSeededRandom, weightedPickFromTuples, type SeededRandom } from "../random.js"
 import { fuzzContext } from "./context.js"
 
 /**
@@ -84,15 +84,7 @@ function createPicker<T>(
   // Weighted tuple picker
   if (isWeightedTuple<T>(picker)) {
     const items = picker
-    const total = items.reduce((sum, [w]) => sum + w, 0)
-    return () => {
-      let r = random.float() * total
-      for (const [weight, value] of items) {
-        r -= weight
-        if (r <= 0) return value
-      }
-      return items[items.length - 1][1]
-    }
+    return () => weightedPickFromTuples(items, random.float())
   }
 
   // Array picker - random from array

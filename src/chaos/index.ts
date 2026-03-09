@@ -133,7 +133,7 @@ const BUILTIN_REGISTRY: ChaosRegistry<unknown> = {
   reorder: (s, p, rng) => reorder(s, (p.windowSize as number) ?? 5, rng),
   duplicate: (s, p, rng) => duplicate(s, (p.rate as number) ?? 0.3, rng),
   burst: (s, p) => burst(s, (p.burstSize as number) ?? 10),
-  init_gap: (s, p) => initGap(s, (p.count as number) ?? 5),
+  initGap: (s, p) => initGap(s, (p.count as number) ?? 5),
   delay: (s, p, rng) => delay(s, (p.minMs as number) ?? 1, (p.maxMs as number) ?? 5, rng),
 }
 

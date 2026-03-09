@@ -1,4 +1,7 @@
 /**
+ * @todo Planned vitest plugin — stub only. Implement config injection and
+ *       custom CLI mode interception (vitest fuzz, vitest ai, vitest doc).
+ *
  * Vitest plugin for vi-monkey
  *
  * @example
