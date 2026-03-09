@@ -43,7 +43,7 @@ Built-in transformers: `drop`, `reorder`, `duplicate`, `burst`, `initGap`, `dela
 ## Install
 
 ```bash
-bun add vi-monkey
+npm install vi-monkey
 ```
 
 ## Exports
