@@ -7,8 +7,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest"
 import React from "react"
-import { render, createTerm } from "@hightea/term"
-import { stripAnsi } from "@hightea/term/testing"
+import { render, createTerm } from "@silvery/react"
+import { stripAnsi } from "@silvery/test"
 import { Writable } from "node:stream"
 
 import { Report, DEFAULT_SYMBOLS, type Options } from "../src/dotz/index.tsx"

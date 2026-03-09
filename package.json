@@ -52,13 +52,13 @@
     "vitest": "^4.0.0"
   },
   "peerDependencies": {
-    "@hightea/term": ">=0.1.0",
+    "@silvery/react": ">=0.1.0",
     "decant": ">=0.1.0",
     "react": ">=19.0.0",
     "vitest": ">=2.0.0"
   },
   "peerDependenciesMeta": {
-    "@hightea/term": {
+    "@silvery/react": {
       "optional": true
     },
     "react": {
