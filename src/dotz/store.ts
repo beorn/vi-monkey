@@ -5,7 +5,7 @@
  * durations, and categories with support for test retries.
  */
 
-import { createLogger } from "decant"
+import { createLogger } from "loggily"
 const log = createLogger("vitestx:dotz:store")
 
 // =============================================================================

@@ -53,7 +53,7 @@
   },
   "peerDependencies": {
     "@silvery/react": ">=0.1.0",
-    "decant": ">=0.1.0",
+    "loggily": ">=0.1.0",
     "react": ">=19.0.0",
     "vitest": ">=2.0.0"
   },
@@ -64,7 +64,7 @@
     "react": {
       "optional": true
     },
-    "decant": {
+    "loggily": {
       "optional": true
     }
   }

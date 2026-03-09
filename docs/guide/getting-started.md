@@ -6,7 +6,7 @@
 bun add vitestx
 ```
 
-vitestx has peer dependencies on `vitest` (required) and optionally `@silvery/term`, `react`, and `decant` (for the Dotz reporter).
+vitestx has peer dependencies on `vitest` (required) and optionally `@silvery/term`, `react`, and `loggily` (for the Dotz reporter).
 
 ## Quick Examples
 

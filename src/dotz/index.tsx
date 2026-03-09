@@ -19,7 +19,7 @@ import {
   type Term,
   type PatchedConsole,
 } from "@silvery/react"
-import { createLogger } from "decant"
+import { createLogger } from "loggily"
 
 import { createTestStore, type TestState, type TestStore, type TestStoreState } from "./store.js"
 
