@@ -18,17 +18,17 @@ src/
 │ ├── test-fuzz.ts # test.fuzz() wrapper with tracking
 │ ├── context.ts # FuzzContext for tracking state
 │ ├── shrink.ts # Delta-debugging shrink
-│ └── regression.ts # __fuzz_cases__/ save/load
+│ └── regression.ts # **fuzz_cases**/ save/load
 └── chaos/ # Chaos stream transformers
-  └── index.ts # drop, reorder, duplicate, burst, initGap, delay + chaos()
+└── index.ts # drop, reorder, duplicate, burst, initGap, delay + chaos()
 
 ## Subpath Exports
 
 ```typescript
-import { test, gen, take } from "vi-monkey"          // Root: re-exports fuzz + utilities
-import { test, gen, take } from "vi-monkey/fuzz"      // Fuzz: gen/take/test.fuzz/shrink/regression
+import { test, gen, take } from "vi-monkey" // Root: re-exports fuzz + utilities
+import { test, gen, take } from "vi-monkey/fuzz" // Fuzz: gen/take/test.fuzz/shrink/regression
 import { chaos, drop, reorder } from "vi-monkey/chaos" // Chaos: stream transformers
-import { viMonkeyPlugin } from "vi-monkey/plugin"      // Vitest plugin
+import { viMonkeyPlugin } from "vi-monkey/plugin" // Vitest plugin
 ```
 
 ## Key APIs
@@ -46,7 +46,7 @@ take(generator, 100) — limit + auto-track for shrinking
 test.fuzz('name', async () => {
 for await (const key of take(gen(['j','k']), 100)) {
 await handle.press(key)
-expect(...) // On failure: auto-shrink, save to __fuzz_cases__/
+expect(...) // On failure: auto-shrink, save to **fuzz_cases**/
 }
 })
 

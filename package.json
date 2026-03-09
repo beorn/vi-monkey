@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "description": "Fuzz testing and chaos streams for Vitest",
   "keywords": [
+    "chaos",
     "fuzz",
     "fuzzing",
-    "chaos",
     "property-based-testing",
     "testing",
     "vitest"

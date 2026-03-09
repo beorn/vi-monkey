@@ -49,9 +49,9 @@ bun add vi-monkey
 ## Exports
 
 ```typescript
-import { test, gen, take } from "vi-monkey"        // Fuzz testing
-import { chaos, drop, reorder } from "vi-monkey/chaos"  // Chaos streams
-import { viMonkeyPlugin } from "vi-monkey/plugin"   // Vitest plugin
+import { test, gen, take } from "vi-monkey" // Fuzz testing
+import { chaos, drop, reorder } from "vi-monkey/chaos" // Chaos streams
+import { viMonkeyPlugin } from "vi-monkey/plugin" // Vitest plugin
 ```
 
 ## License
