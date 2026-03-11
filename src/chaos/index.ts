@@ -7,8 +7,8 @@
  *
  * @example
  * ```typescript
- * import { gen, take } from "vi-monkey"
- * import { drop, reorder, chaos } from "vi-monkey/chaos"
+ * import { gen, take } from "vimonkey"
+ * import { drop, reorder, chaos } from "vimonkey/chaos"
  *
  * const base = gen(picker)
  * const chaotic = reorder(drop(base, 0.2, rng), 5, rng)

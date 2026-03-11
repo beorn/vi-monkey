@@ -1,4 +1,4 @@
-# vi-monkey — Fuzz Testing & Chaos Streams for Vitest
+# vimonkey — Fuzz Testing & Chaos Streams for Vitest
 
 Fuzz testing (gen/take generators, test.fuzz() with auto-shrinking) and chaos stream transformers for Vitest.
 
@@ -25,10 +25,10 @@ src/
 ## Subpath Exports
 
 ```typescript
-import { test, gen, take } from "vi-monkey" // Root: re-exports fuzz + utilities
-import { test, gen, take } from "vi-monkey/fuzz" // Fuzz: gen/take/test.fuzz/shrink/regression
-import { chaos, drop, reorder } from "vi-monkey/chaos" // Chaos: stream transformers
-import { viMonkeyPlugin } from "vi-monkey/plugin" // Vitest plugin
+import { test, gen, take } from "vimonkey" // Root: re-exports fuzz + utilities
+import { test, gen, take } from "vimonkey/fuzz" // Fuzz: gen/take/test.fuzz/shrink/regression
+import { chaos, drop, reorder } from "vimonkey/chaos" // Chaos: stream transformers
+import { viMonkeyPlugin } from "vimonkey/plugin" // Vitest plugin
 ```
 
 ## Key APIs
@@ -56,7 +56,7 @@ Composable async iterable transformers: drop, reorder, duplicate, burst, initGap
 Plus chaos() combinator with extensible ChaosRegistry<T>.
 
 ```typescript
-import { chaos, drop, reorder, builtinChaosRegistry } from "vi-monkey/chaos"
+import { chaos, drop, reorder, builtinChaosRegistry } from "vimonkey/chaos"
 
 const chaotic = chaos(
   source,

@@ -2,13 +2,13 @@
  * @todo Planned vitest plugin — stub only. Implement config injection and
  *       custom CLI mode interception (vitest fuzz, vitest ai, vitest doc).
  *
- * Vitest plugin for vi-monkey
+ * Vitest plugin for vimonkey
  *
  * @example
  * ```typescript
  * // vitest.config.ts
  * import { defineConfig } from 'vitest/config'
- * import { viMonkey } from 'vi-monkey/plugin'
+ * import { viMonkey } from 'vimonkey/plugin'
  *
  * export default defineConfig({
  *   plugins: [
@@ -68,13 +68,13 @@ export interface ViMonkeyOptions {
 }
 
 /**
- * Creates the vi-monkey plugin for Vitest
+ * Creates the vimonkey plugin for Vitest
  */
 export function viMonkey(options: ViMonkeyOptions = {}): Plugin {
   const { fuzz = {}, ai = {}, doc = {} } = options
 
   return {
-    name: "vi-monkey",
+    name: "vimonkey",
 
     config() {
       // Configure vitest for custom modes

@@ -1,4 +1,4 @@
-# vi-monkey Tests
+# vimonkey Tests
 
 **Test Infrastructure — Vitest Extensions**: Fuzz testing, chaos streams, seeded RNG, and environment config.
 
@@ -11,7 +11,7 @@
 
 ## What NOT to Test Here
 
-- Vitest internals or reporter protocol — vi-monkey bridges to them
+- Vitest internals or reporter protocol — vimonkey bridges to them
 
 ## Patterns
 
@@ -32,7 +32,7 @@ test("gen is deterministic with same seed", async () => {
 ## Ad-Hoc Testing
 
 ```bash
-bun vitest run tests/              # All vi-monkey tests
+bun vitest run tests/              # All vimonkey tests
 bun vitest run tests/fuzz.fuzz.ts  # Fuzz API tests
 bun vitest run tests/chaos.test.ts # Chaos transformers
 bun vitest run tests/random.test.ts # Seeded RNG

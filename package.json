@@ -1,5 +1,5 @@
 {
-  "name": "vi-monkey",
+  "name": "vimonkey",
   "version": "0.2.0",
   "description": "Fuzz testing and chaos streams for Vitest",
   "keywords": [
@@ -10,15 +10,15 @@
     "testing",
     "vitest"
   ],
-  "homepage": "https://github.com/beorn/vi-monkey",
+  "homepage": "https://github.com/beorn/vimonkey",
   "bugs": {
-    "url": "https://github.com/beorn/vi-monkey/issues"
+    "url": "https://github.com/beorn/vimonkey/issues"
   },
   "license": "MIT",
   "author": "Beorn",
   "repository": {
     "type": "git",
-    "url": "https://github.com/beorn/vi-monkey.git"
+    "url": "https://github.com/beorn/vimonkey.git"
   },
   "files": [
     "src",

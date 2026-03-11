@@ -1,4 +1,4 @@
-# vi-monkey
+# vimonkey
 
 Fuzz testing and chaos streams for [Vitest](https://vitest.dev/).
 
@@ -7,7 +7,7 @@ Fuzz testing and chaos streams for [Vitest](https://vitest.dev/).
 Async generators with auto-shrinking, regression cases, and seeded RNG.
 
 ```typescript
-import { test, gen, take } from "vi-monkey"
+import { test, gen, take } from "vimonkey"
 
 test.fuzz("cursor stays in bounds", async () => {
   for await (const key of take(gen(["j", "k", "h", "l"]), 100)) {
@@ -25,7 +25,7 @@ Generators support uniform arrays, weighted tuples, sync/async picker functions,
 Composable async iterable transformers that simulate unreliable delivery.
 
 ```typescript
-import { chaos, drop, reorder } from "vi-monkey/chaos"
+import { chaos, drop, reorder } from "vimonkey/chaos"
 
 const chaotic = chaos(
   source,
@@ -43,15 +43,15 @@ Built-in transformers: `drop`, `reorder`, `duplicate`, `burst`, `initGap`, `dela
 ## Install
 
 ```bash
-npm install vi-monkey
+npm install vimonkey
 ```
 
 ## Exports
 
 ```typescript
-import { test, gen, take } from "vi-monkey" // Fuzz testing
-import { chaos, drop, reorder } from "vi-monkey/chaos" // Chaos streams
-import { viMonkeyPlugin } from "vi-monkey/plugin" // Vitest plugin
+import { test, gen, take } from "vimonkey" // Fuzz testing
+import { chaos, drop, reorder } from "vimonkey/chaos" // Chaos streams
+import { viMonkeyPlugin } from "vimonkey/plugin" // Vitest plugin
 ```
 
 ## License

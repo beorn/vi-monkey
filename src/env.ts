@@ -18,7 +18,7 @@ const VALID_VALUES: TestSys[] = ["fake", "real:mem", "real:disk"]
  *
  * @example
  * ```typescript
- * import { getTestSys } from 'vi-monkey'
+ * import { getTestSys } from 'vimonkey'
  *
  * const sys = getTestSys()
  * if (sys === 'fake') {
