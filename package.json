@@ -1,14 +1,22 @@
 {
   "name": "vimonkey",
   "version": "0.2.0",
-  "description": "Fuzz testing and chaos streams for Vitest",
+  "description": "Fuzz testing with auto-shrinking and composable chaos stream transformers for Vitest",
   "keywords": [
+    "async-generator",
+    "auto-shrink",
     "chaos",
+    "chaos-engineering",
+    "delta-debugging",
     "fuzz",
     "fuzzing",
     "property-based-testing",
+    "seeded-random",
+    "shrinking",
+    "stream-transformer",
     "testing",
-    "vitest"
+    "vitest",
+    "vitest-plugin"
   ],
   "homepage": "https://github.com/beorn/vimonkey",
   "bugs": {
