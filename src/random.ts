@@ -55,7 +55,7 @@ export function weightedPickFromTuples<T>(tuples: readonly (readonly [number, T]
     r -= weight
     if (r <= 0) return value
   }
-  return tuples[tuples.length - 1][1]
+  return tuples[tuples.length - 1]![1]
 }
 
 /**
@@ -98,7 +98,7 @@ export function createSeededRandom(seed?: number): SeededRandom {
       if (array.length === 0) {
         throw new Error("Cannot pick from empty array")
       }
-      return array[random.int(0, array.length - 1)]
+      return array[random.int(0, array.length - 1)]!
     },
 
     weightedPick<T extends string>(items: readonly T[], weights: Partial<Record<T, number>>): T {
@@ -110,7 +110,7 @@ export function createSeededRandom(seed?: number): SeededRandom {
       const result = [...array]
       for (let i = result.length - 1; i > 0; i--) {
         const j = random.int(0, i)
-        ;[result[i], result[j]] = [result[j], result[i]]
+        ;[result[i], result[j]] = [result[j]!, result[i]!]
       }
       return result
     },

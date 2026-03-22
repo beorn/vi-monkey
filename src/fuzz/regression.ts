@@ -74,7 +74,7 @@ export function loadCases(testFilePath: string): SavedCase[] {
     if (!file.endsWith(".json")) continue
     try {
       const content = readFileSync(join(dir, file), "utf-8")
-      cases.push(JSON.parse(content))
+      cases.push(JSON.parse(content) as SavedCase)
     } catch {
       // Skip invalid files
     }

@@ -75,11 +75,11 @@ function getTestFilePath(): string {
   for (const line of stack) {
     // Look for test file patterns
     const match = line.match(/\(([^)]+\.(test|fuzz)\.(ts|tsx|js|jsx)):\d+:\d+\)/)
-    if (match) return match[1]
+    if (match) return match[1]!
 
     // Also try without parentheses
     const match2 = line.match(/at\s+([^\s]+\.(test|fuzz)\.(ts|tsx|js|jsx)):\d+:\d+/)
-    if (match2) return match2[1]
+    if (match2) return match2[1]!
   }
 
   // Fallback to current working directory
@@ -206,7 +206,7 @@ function createFuzzTest(name: string, fn: () => Promise<void>, options: FuzzTest
   // Multiple runs — register one test per seed
   const seeds = deriveSeeds(seed, repeats)
   for (let i = 0; i < seeds.length; i++) {
-    const s = seeds[i]
+    const s = seeds[i]!
     vitestTest(`${name} [seed=${s}]`, testOptions, async () => {
       await runFuzzBody(name, fn, s, bodyOpts)
     })

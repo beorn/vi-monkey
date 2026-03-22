@@ -71,7 +71,7 @@ describe("gen()", () => {
 
     expect(values).toHaveLength(5)
     // Values should increase due to iteration
-    expect(values[4]).toBeGreaterThan(values[0])
+    expect(values[4]!).toBeGreaterThan(values[0]!)
   })
 
   it("flattens array results from picker", async () => {

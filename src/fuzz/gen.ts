@@ -88,7 +88,7 @@ function createPicker<T>(
   }
 
   // Array picker - random from array
-  return () => picker[Math.floor(random.float() * picker.length)]
+  return () => picker[Math.floor(random.float() * picker.length)]!
 }
 
 /**
